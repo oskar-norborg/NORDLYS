@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/diagnostics",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 279,
+      "bodyTextHash": "a8e9db1c19edd26e91bcef468fd2ea00bf6fdea3373d4e9045f2c8c9719d8a2b",
+      "bodyTextPrefix": "NORDLYS PRIVATE WEALTH Demo My Data Privacy ⌘K Planner Portfolio",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/diagnostics-stage5.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 22315,
+      "bodyTextHash": "ad897ab89696917f6c41da7a2bd55eb9d25af75aca287226589bfebbfc93de1d",
+      "bodyTextPrefix": "NORDLYS Demo My Data VERIFICATION Diagnostics Built-in suite. Ev",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/diagnostics-stage5-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/diagnostics-stage5.json"
+}

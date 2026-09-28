@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 6214,
+      "bodyTextHash": "8d3289b1e448669e5d2486a07fd22303b5761e8c5a0f52df28ee4a16e407af8a",
+      "bodyTextPrefix": "NORDLYS PRIVATE WEALTH Demo My Data Privacy ⌘K Planner Portfolio",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 4886,
+      "bodyTextHash": "2ff21bc091f17af77bacc007f2ebde011efe05a34f79a7c2c4c90fb4d521c460",
+      "bodyTextPrefix": "NORDLYS Demo My Data CLIENT PLANNING Emilie Voss Demo household ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

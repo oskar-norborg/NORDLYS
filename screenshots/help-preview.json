@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/help",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 3708,
+      "bodyTextHash": "743efec01de1aa2115057ae298d528cbd5dbc11d595f2e7fd3a894047925fd23",
+      "bodyTextPrefix": "NORDLYS PRIVATE WEALTH Demo My Data Privacy ⌘K Planner Portfolio",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/help-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 3632,
+      "bodyTextHash": "14b64ef9145fd41f4f2eb35c6cccf6b37f9970237f84d6155376c04e852867e3",
+      "bodyTextPrefix": "NORDLYS Demo My Data GUIDE Help NORDLYS is a private wealth plan",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/help-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/help-preview.json"
+}

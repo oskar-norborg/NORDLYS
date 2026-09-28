@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/import",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 1432,
+      "bodyTextHash": "41cac2ffc25ee4f553891a14a8b54f7619977f0750d04575149cdd95ad0efa51",
+      "bodyTextPrefix": "NORDLYS PRIVATE WEALTH Demo My Data Privacy ⌘K Planner Portfolio",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/stage2-import.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "NORDLYS",
+      "hasCanvas": false,
+      "bodyTextLen": 1365,
+      "bodyTextHash": "cdef9de1059f7ec206f04e9f90c460bb154447921e27bdd9051738851f147b87",
+      "bodyTextPrefix": "NORDLYS Demo My Data LEDGER Import Nordnet “Transaksjoner og not",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/stage2-import-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/stage2-import.json"
+}
