@@ -18,6 +18,81 @@ Nothing leaves the device. There are no accounts. Demo, My Data, and Privacy are
 - **Diagnostics** — the engine checks itself: fuzz on the parsers, and timings for the 10k plan, the proposal PDF, and a 100,000-row import / file parse.
 - **Show this** — a short walkthrough of those screens if you are presenting it.
 
+## How it is put together
+
+One user. Four jobs. No server.
+
+The shell reads and writes two stores. The household and the plan live in `app-store.ts`. The ledger lives in `portfolio-store.ts`. Both persist in the browser.
+
+```mermaid
+flowchart TB
+  user[Household user]
+
+  subgraph shell [App experience]
+    router["router.tsx"]
+    appshell["app-shell.tsx"]
+    appstore["app-store.ts"]
+    portstore["portfolio-store.ts"]
+    persist[Browser storage]
+    router --> appshell --> appstore --> persist
+    appshell --> portstore --> persist
+  end
+
+  subgraph book [Portfolio workflow]
+    importui["import-page.tsx"]
+    ledger["engine/ledger"]
+    portui["portfolio-page.tsx"]
+    holdings["ledger/holdings.ts"]
+    gap["gap-panel.tsx"]
+    importui --> ledger --> portstore
+    portui --> holdings
+    portui --> gap
+  end
+
+  subgraph plan [Planning and risk]
+    planner["planner-page.tsx"]
+    mcclient["mc-client.ts"]
+    mc["montecarlo.ts"]
+    riskui["risk-page.tsx"]
+    riskeng["risk.ts / risk-metrics.ts"]
+    optui["options-page.tsx"]
+    opteng["options.ts"]
+    planner -->|10k paths| mcclient --> mc
+    riskui --> riskeng
+    optui --> opteng
+  end
+
+  subgraph replay [Strategy research]
+    btui["backtest-page.tsx"]
+    diag["diagnostics.tsx"]
+    btclient["engine/backtest"]
+    strat["engine/strategy"]
+    sweep["backtest/sweep.ts"]
+    diag --> diagnostics["engine/diagnostics.ts"]
+    btui --> btclient
+    btclient --> strat
+    btclient --> sweep
+  end
+
+  subgraph report [Reporting]
+    pdfbtn["download-button.tsx"]
+    pdf["engine/pdf/proposal.ts"]
+    pdfbtn --> pdf
+  end
+
+  user --> router
+  user --> importui
+  user --> portui
+  user --> planner
+  user --> riskui
+  user --> optui
+  user --> btui
+  user --> diag
+  user --> pdfbtn
+```
+
+The Monte Carlo can run on the main thread or in a worker. Sweeps use a worker so the page stays usable. The PDF is built from the plan that already ran — it should not simulate again just to write a file.
+
 ## Choices I would stand behind
 
 **Stay in the browser.** Net worth does not belong on a server I stood up for a portfolio piece.
