@@ -85,3 +85,24 @@ export function portfolioMoments(
   }
   return { mu: m, vol: Math.sqrt(Math.max(v, 0)) };
 }
+
+/** Convert a nominal series at whole-year offsets into today's money. */
+export function deflateByInflation(values: number[], years: number[], inflation: number): number[] {
+  return values.map((v, i) => {
+    const y = years[i] ?? i;
+    const g = Math.pow(1 + inflation, y);
+    return g === 0 ? v : v / g;
+  });
+}
+
+export function niceTicksFromZero(maxVal: number, target = 4): number[] {
+  const max = Math.max(Math.abs(maxVal), 1);
+  const raw = max / Math.max(target, 1);
+  const exp = Math.pow(10, Math.floor(Math.log10(raw)));
+  const f = raw / exp;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * exp;
+  const top = Math.ceil(max / step) * step;
+  const ticks: number[] = [];
+  for (let v = 0; v <= top + step * 1e-9; v += step) ticks.push(v);
+  return ticks;
+}
