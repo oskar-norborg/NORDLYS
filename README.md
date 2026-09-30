@@ -8,6 +8,8 @@ I built it in Grok Build Mode. I directed the product — what it should do, wha
 
 Nothing leaves the device. There are no accounts. Demo, My Data, and Privacy are just modes.
 
+The repo still contains App Builder hosting files under `src/lib/auth`, `src/lib/db.ts`, and `src/lib/multiplayer`. The product never calls them. They stay because the App Builder host expects that scaffolding. The planner, ledger, Monte Carlo, and PDFs run entirely in the browser.
+
 ## What it does
 
 - **Planner** — household, goals, risk answers, and a 10,000-path Monte Carlo. The fan is a spread of outcomes, not a single line.
@@ -95,7 +97,7 @@ The Monte Carlo can run on the main thread or in a worker. Sweeps use a worker s
 
 ## Choices I would stand behind
 
-**Stay in the browser.** Net worth does not belong on a server I stood up for a portfolio piece.
+**Stay in the browser.** Net worth does not belong on a server I stood up for a portfolio piece. The template auth, database, and multiplayer modules are unused host leftovers, not a backend for this app.
 
 **Do not look ahead.** Negative offsets like `close[-1]` are a parse error. Looking back in time is the only direction that is allowed.
 
