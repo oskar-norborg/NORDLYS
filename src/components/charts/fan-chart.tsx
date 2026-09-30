@@ -3,11 +3,13 @@ import type { SimResult } from "@/engine/types";
 import { formatIndex, formatMoney, formatNumber } from "@/engine/format";
 import type { CurrencyCode } from "@/engine/types";
 import { AS_OF_YEAR } from "@/engine/types";
+import { deflateByInflation, niceTicksFromZero } from "@/engine/finance";
 
 interface Props {
   result: SimResult;
   privacy: boolean;
   currency: CurrencyCode;
+  inflation: number;
 }
 
 function readToken(name: string, fallback: string): string {
@@ -16,7 +18,7 @@ function readToken(name: string, fallback: string): string {
   return v || fallback;
 }
 
-export function FanChart({ result, privacy, currency }: Props) {
+export function FanChart({ result, privacy, currency, inflation }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -55,42 +57,38 @@ export function FanChart({ result, privacy, currency }: Props) {
       const n = result.years.length;
       if (n < 2 || plotW <= 0) return;
 
+      const real = {
+        p5: deflateByInflation(result.p5, result.years, inflation),
+        p25: deflateByInflation(result.p25, result.years, inflation),
+        p50: deflateByInflation(result.p50, result.years, inflation),
+        p75: deflateByInflation(result.p75, result.years, inflation),
+        p95: deflateByInflation(result.p95, result.years, inflation),
+      };
       const series = privacy
         ? {
-            p5: result.p5.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
-            p25: result.p25.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
-            p50: result.p50.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
-            p75: result.p75.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
-            p95: result.p95.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
+            p5: real.p5.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
+            p25: real.p25.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
+            p50: real.p50.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
+            p75: real.p75.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
+            p95: real.p95.map((v) => (result.startWealth ? (v / result.startWealth) * 100 : 100)),
           }
-        : { p5: result.p5, p25: result.p25, p50: result.p50, p75: result.p75, p95: result.p95 };
+        : real;
 
-      let min = Infinity;
-      let max = -Infinity;
-      for (const arr of [series.p5, series.p95]) {
-        for (const v of arr) {
-          min = Math.min(min, v);
-          max = Math.max(max, v);
-        }
+      let max = 0;
+      for (const arr of [series.p5, series.p95, series.p50]) {
+        for (const v of arr) max = Math.max(max, v);
       }
-      if (min === max) {
-        min *= 0.9;
-        max *= 1.1;
-      }
-      const span = max - min || 1;
-      min -= span * 0.08;
-      max += span * 0.08;
+      const yTicks = niceTicksFromZero(max || 1);
+      const top = yTicks[yTicks.length - 1] ?? max ?? 1;
 
       const xAt = (i: number) => pad.l + (i / (n - 1)) * plotW;
-      const yAt = (v: number) => pad.t + (1 - (v - min) / (max - min)) * plotH;
+      const yAt = (v: number) => pad.t + (1 - v / top) * plotH;
 
       ctx.strokeStyle = grid;
       ctx.lineWidth = 1;
       ctx.font = "11px IBM Plex Sans, sans-serif";
       ctx.fillStyle = muted;
-      const ticks = 4;
-      for (let t = 0; t <= ticks; t++) {
-        const v = min + ((max - min) * t) / ticks;
+      for (const v of yTicks) {
         const y = yAt(v);
         ctx.beginPath();
         ctx.moveTo(pad.l, y);
@@ -146,13 +144,16 @@ export function FanChart({ result, privacy, currency }: Props) {
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [result, privacy, hover]);
+  }, [result, privacy, hover, inflation]);
 
   const i = hover ?? 0;
   const year = AS_OF_YEAR + (result.years[i] ?? 0);
-  const med = result.p50[i] ?? 0;
-  const lo = result.p5[i] ?? 0;
-  const hi = result.p95[i] ?? 0;
+  const realP50 = deflateByInflation(result.p50, result.years, inflation);
+  const realP5 = deflateByInflation(result.p5, result.years, inflation);
+  const realP95 = deflateByInflation(result.p95, result.years, inflation);
+  const med = realP50[i] ?? 0;
+  const lo = realP5[i] ?? 0;
+  const hi = realP95[i] ?? 0;
 
   function onMove(e: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -180,6 +181,7 @@ export function FanChart({ result, privacy, currency }: Props) {
           <Legend swatch="var(--color-band-outer)" label="5–95" />
           <Legend swatch="var(--color-band-inner)" label="25–75" />
           <Legend swatch="var(--color-accent)" label="Median" line />
+          <span>Today’s kroner (real)</span>
         </div>
         <div className="font-mono tabular-nums text-fg">
           {year}
@@ -207,7 +209,10 @@ function Legend({ swatch, label, line }: { swatch: string; label: string; line?:
 
 function compact(v: number): string {
   const a = Math.abs(v);
-  if (a >= 1e6) return `${(v / 1e6).toFixed(1)}m`;
+  if (a >= 1e6) {
+    const m = v / 1e6;
+    return Number.isInteger(m) ? `${m}m` : `${m.toFixed(0)}m`;
+  }
   if (a >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
   return v.toFixed(0);
 }
