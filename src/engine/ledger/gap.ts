@@ -7,10 +7,10 @@ import { round2 } from "./numbers";
 
 const CLASS_CORE: Record<AssetId, { name: string; ticker: string; isin: string }> = {
   global_eq: { name: "iShares Core MSCI World", ticker: "IWDA", isin: "IE00B4L5Y983" },
-  us_eq: { name: "Apple Inc", ticker: "AAPL", isin: "US0378331005" },
-  nordic_eq: { name: "Equinor ASA", ticker: "EQNR", isin: "NO0010096985" },
-  bonds: { name: "Storebrand Obligasjon", ticker: "STB-OBL", isin: "NO0010582984" },
-  real_estate: { name: "Listed real estate", ticker: "RE", isin: "RE-PROXY" },
+  us_eq: { name: "iShares Core S&P 500", ticker: "CSPX", isin: "IE00B5BMR087" },
+  nordic_eq: { name: "iShares MSCI Nordic", ticker: "DNOR", isin: "IE00B53QDK08" },
+  bonds: { name: "iShares Core Global Aggregate Bond", ticker: "AGGU", isin: "IE00BDBRDM35" },
+  real_estate: { name: "iShares Developed Markets Property Yield", ticker: "IWDP", isin: "IE00B1FZS350" },
   cash: { name: "Cash", ticker: "CASH", isin: "CASH" },
 };
 
@@ -43,43 +43,28 @@ export function analyzeGap(
       continue;
     }
     if (Math.abs(row.gap) < 50) continue;
-    const inClass = holdings.holdings.filter((h) => h.security.assetClass === row.assetClass);
+    const pick = coreSecurity(row.assetClass, securities, holdings);
     if (row.gap < 0) {
-      let remain = -row.gap;
-      const ordered = inClass.slice().sort((a, b) => b.marketNok - a.marketNok);
-      for (const h of ordered) {
-        if (remain < 50) break;
-        const px = h.price * h.fx;
-        if (px <= 0) continue;
-        const maxShares = h.qty;
-        const want = remain / px;
-        const shares = Math.min(maxShares, Math.round(want));
-        if (shares <= 0) continue;
-        const value = shares * px;
-        trades.push({
-          isin: h.isin,
-          name: h.security.name,
-          ticker: h.security.ticker,
-          assetClass: row.assetClass,
-          side: "sell",
-          shares,
-          price: h.price,
-          valueNok: round2(value),
-        });
-        remain -= value;
+      const px = pick.price * (pick.fx || 1);
+      if (px <= 0) continue;
+      const shares = Math.round(-row.gap / px);
+      if (shares <= 0) {
+        residualCash += -row.gap;
+        continue;
       }
-      residualCash += -row.gap - (-row.gap - remain);
+      const value = shares * px;
+      trades.push({
+        isin: pick.isin,
+        name: pick.name,
+        ticker: pick.ticker,
+        assetClass: row.assetClass,
+        side: "sell",
+        shares,
+        price: pick.price,
+        valueNok: round2(value),
+      });
+      residualCash += -row.gap - value;
     } else {
-      const existing = inClass[0];
-      const pick = existing
-        ? {
-            isin: existing.isin,
-            name: existing.security.name,
-            ticker: existing.security.ticker,
-            price: existing.price,
-            fx: existing.fx,
-          }
-        : coreSecurity(row.assetClass, securities, holdings);
       const pxNative = pick.price;
       const fx = pick.fx || 1;
       const px = pxNative * fx;
@@ -116,20 +101,9 @@ export function analyzeGap(
 
 function coreSecurity(
   assetClass: AssetId,
-  securities: Security[],
+  _securities: Security[],
   holdings: HoldingsResult,
 ): { isin: string; name: string; ticker: string; price: number; fx: number } {
-  const existing = securities.find((s) => s.assetClass === assetClass);
-  if (existing) {
-    const h = holdings.holdings.find((x) => x.isin === existing.isin);
-    return {
-      isin: existing.isin,
-      name: existing.name,
-      ticker: existing.ticker,
-      price: h?.price || 100,
-      fx: h?.fx || 1,
-    };
-  }
   const c = CLASS_CORE[assetClass];
   const h = holdings.holdings.find((x) => x.isin === c.isin);
   return { isin: c.isin, name: c.name, ticker: c.ticker, price: h?.price || 100, fx: h?.fx || 1 };
