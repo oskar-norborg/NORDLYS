@@ -19,29 +19,40 @@ export function defaultCma(): CapitalMarketAssumptions {
       [0.52, 0.46, 0.4, 0.22, 1.0, 0.06],
       [0.05, 0.03, 0.04, 0.18, 0.06, 1.0],
     ],
-    inflation: 0.025,
+    inflation: 0.024,
   };
-}
-
-export function bookForAnswers(answers: number[], cma?: CapitalMarketAssumptions): ModelPortfolio {
-  const books = cma ? modelBooks(cma) : MODEL_PORTFOLIOS;
-  const avg = answers.reduce((a, b) => a + b, 0) / Math.max(answers.length, 1);
-  const level = Math.max(1, Math.min(5, Math.round(avg)));
-  const found = books.find((b) => b.riskLevel === level);
-  return found ?? books[2] ?? FALLBACK_BOOKS[2]!;
 }
 
 /** Optimizer-derived books on the default CMA. Live CMA uses `modelBooks(cma)`. */
 export const MODEL_PORTFOLIOS: ModelPortfolio[] = modelBooks(defaultCma());
 
-export function defaultWhatIf(fee = 0.0075) {
-  return {
-    extraSavingsPts: 0,
-    retireLaterYears: 0,
-    riskOverride: null as number | null,
-    fee,
-    rebalance: "monthly" as const,
-  };
+export function portfolioByRiskLevel(level: number, cma?: CapitalMarketAssumptions): ModelPortfolio {
+  const books = cma ? modelBooks(cma) : MODEL_PORTFOLIOS;
+  const found = books.find((p) => p.riskLevel === level);
+  return found ?? books[2] ?? FALLBACK_BOOKS[2]!;
+}
+
+export function assertCma(cma: CapitalMarketAssumptions): string | null {
+  const n = cma.mu.length;
+  if (cma.vol.length !== n || cma.corr.length !== n) return "CMA dimensions do not match.";
+  for (let i = 0; i < n; i++) {
+    if (!(cma.vol[i]! >= 0)) return `Volatility for asset ${i} is negative.`;
+    if (cma.corr[i]!.length !== n) return "Correlation matrix is not square.";
+    if (Math.abs(cma.corr[i]![i]! - 1) > 1e-6) return "Correlation diagonal must be 1.";
+    for (let j = 0; j < i; j++) {
+      const a = cma.corr[i]![j]!;
+      const b = cma.corr[j]![i]!;
+      if (Math.abs(a - b) > 1e-9) return "Correlation matrix is not symmetric.";
+      if (a < -1 || a > 1) return "Correlation out of [-1, 1].";
+    }
+  }
+  if (!(cma.inflation > -0.05 && cma.inflation < 0.2)) return "Inflation is outside a plausible range.";
+  try {
+    cholesky(cma.corr);
+  } catch {
+    return "Correlation matrix is not positive definite.";
+  }
+  return null;
 }
 
 export function symmetrizeCorr(corr: number[][]): number[][] {
@@ -49,12 +60,10 @@ export function symmetrizeCorr(corr: number[][]): number[][] {
   const out = corr.map((row) => row.slice());
   for (let i = 0; i < n; i++) {
     out[i]![i] = 1;
-    for (let j = i + 1; j < n; j++) {
-      const v = 0.5 * ((out[i]![j] ?? 0) + (out[j]![i] ?? 0));
+    for (let j = 0; j < i; j++) {
+      const v = out[j]![i]!;
       out[i]![j] = v;
-      out[j]![i] = v;
     }
   }
-  void cholesky;
   return out;
 }
