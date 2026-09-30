@@ -54,8 +54,8 @@ export interface HouseholdMember {
 
 export interface Goal {
   id: string;
-  type: GoalType;
   name: string;
+  type: GoalType;
   targetAmount: number;
   year: number;
   priority: number;
@@ -86,6 +86,7 @@ export interface ModelPortfolio {
   riskLevel: number;
   blurb: string;
   weights: number[];
+  source?: "optimizer" | "fallback";
 }
 
 export interface WhatIf {
