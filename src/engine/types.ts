@@ -54,8 +54,8 @@ export interface HouseholdMember {
 
 export interface Goal {
   id: string;
-  name: string;
   type: GoalType;
+  name: string;
   targetAmount: number;
   year: number;
   priority: number;

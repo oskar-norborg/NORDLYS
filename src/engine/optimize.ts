@@ -18,11 +18,13 @@ export interface GroupCap {
   name: string;
   indices: number[];
   cap: number;
+  floor?: number;
 }
 
 export interface MvConstraints {
   longOnly: boolean;
   caps: number[];
+  floors?: number[];
   groups: GroupCap[];
 }
 
@@ -230,7 +232,7 @@ export function solveQP(
   }
 
   const kkt = kktOf(H, g, Aeq, beq, Aineq, bineq, x, eqLam, ineqLam);
-  let primalOk = kkt.primalEq < 1e-6 && kkt.primalIneq < 1e-6;
+  const primalOk = kkt.primalEq < 1e-6 && kkt.primalIneq < 1e-6;
   const value = 0.5 * vecDot(x, matVec(H, x)) + vecDot(g, x);
   return { x, value, eqLam, ineqLam, iters, kkt, feasible: primalOk };
 }
@@ -267,11 +269,26 @@ function packConstraints(n: number, c: MvConstraints): { Aineq: number[][]; bine
     Aineq.push(row);
     bineq.push(cap);
   }
+  for (let i = 0; i < n; i++) {
+    const floor = c.floors?.[i] ?? 0;
+    if (floor > 0) {
+      const row = new Array(n).fill(0);
+      row[i] = -1;
+      Aineq.push(row);
+      bineq.push(-floor);
+    }
+  }
   for (const g of c.groups) {
     const row = new Array(n).fill(0);
     for (const i of g.indices) if (i >= 0 && i < n) row[i] = 1;
     Aineq.push(row);
     bineq.push(g.cap);
+    if (g.floor != null && g.floor > 0) {
+      const flo = new Array(n).fill(0);
+      for (const i of g.indices) if (i >= 0 && i < n) flo[i] = -1;
+      Aineq.push(flo);
+      bineq.push(-g.floor);
+    }
   }
   return { Aineq, bineq };
 }
@@ -357,7 +374,7 @@ export function efficientFrontier(
 /** Equal-risk-contribution weights via cyclical coordinate descent (Spinu). */
 export function riskParity(cov: number[][], nIter = 400): number[] {
   const n = cov.length;
-  let w = new Array(n).fill(1 / n);
+  const w = new Array(n).fill(1 / n);
   for (let it = 0; it < nIter; it++) {
     const Sw = matVec(cov, w);
     const sig2 = vecDot(w, Sw);
@@ -493,12 +510,75 @@ const BOOK_META: { id: string; name: string; riskLevel: number; blurb: string }[
 ];
 
 export const FALLBACK_BOOKS: ModelPortfolio[] = [
-  { ...BOOK_META[0]!, weights: [0.08, 0.06, 0.04, 0.52, 0.1, 0.2] },
-  { ...BOOK_META[1]!, weights: [0.14, 0.1, 0.06, 0.42, 0.12, 0.16] },
-  { ...BOOK_META[2]!, weights: [0.22, 0.16, 0.1, 0.3, 0.14, 0.08] },
-  { ...BOOK_META[3]!, weights: [0.28, 0.22, 0.14, 0.18, 0.13, 0.05] },
-  { ...BOOK_META[4]!, weights: [0.32, 0.26, 0.18, 0.08, 0.13, 0.03] },
+  { ...BOOK_META[0]!, weights: [0.1, 0.06, 0.04, 0.62, 0.1, 0.08], source: "fallback" },
+  { ...BOOK_META[1]!, weights: [0.18, 0.14, 0.08, 0.44, 0.12, 0.04], source: "fallback" },
+  { ...BOOK_META[2]!, weights: [0.28, 0.2, 0.12, 0.26, 0.1, 0.04], source: "fallback" },
+  { ...BOOK_META[3]!, weights: [0.36, 0.26, 0.18, 0.12, 0.06, 0.02], source: "fallback" },
+  { ...BOOK_META[4]!, weights: [0.42, 0.3, 0.23, 0.03, 0.02, 0.0], source: "fallback" },
 ];
+
+const EQ_IDX = [0, 1, 2];
+
+const LADDER = [
+  { equity: 0.2, cashCap: 0.1, bondFloor: 0.5, bondCap: 0.72 },
+  { equity: 0.4, cashCap: 0.05, bondFloor: 0.35, bondCap: 0.52 },
+  { equity: 0.6, cashCap: 0.05, bondFloor: 0.2, bondCap: 0.36 },
+  { equity: 0.8, cashCap: 0.05, bondFloor: 0.08, bondCap: 0.18 },
+  { equity: 0.95, cashCap: 0.05, bondFloor: 0.01, bondCap: 0.08 },
+] as const;
+
+export function ladderConstraints(step: number, n = 6): MvConstraints {
+  const spec = LADDER[Math.max(0, Math.min(LADDER.length - 1, step))]!;
+  const caps = new Array(n).fill(0.55);
+  caps[0] = 0.55;
+  caps[1] = 0.4;
+  caps[2] = 0.3;
+  if (n > 3) caps[3] = spec.bondCap;
+  if (n > 4) caps[4] = 0.2;
+  if (n > 5) caps[5] = spec.cashCap;
+  const floors = new Array(n).fill(0);
+  floors[0] = 0.05;
+  floors[1] = 0.03;
+  floors[2] = 0.02;
+  if (n > 3) floors[3] = spec.bondFloor;
+  if (n > 4) floors[4] = 0.01;
+  return {
+    longOnly: true,
+    caps,
+    floors,
+    groups: [
+      {
+        name: "Equities",
+        indices: EQ_IDX.filter((i) => i < n),
+        cap: spec.equity + 0.012,
+        floor: Math.max(0, spec.equity - 0.012),
+      },
+      { name: "Real estate", indices: [4].filter((i) => i < n), cap: 0.2 },
+    ],
+  };
+}
+
+export function equityShare(w: number[]): number {
+  return (w[0] ?? 0) + (w[1] ?? 0) + (w[2] ?? 0);
+}
+
+export function bondShare(w: number[]): number {
+  return w[3] ?? 0;
+}
+
+export function bookMeetsLadder(w: number[], step: number): boolean {
+  const spec = LADDER[Math.max(0, Math.min(LADDER.length - 1, step))]!;
+  const eq = equityShare(w);
+  const cashCap = spec.cashCap;
+  if ((w[0] ?? 0) < 0.049) return false;
+  if ((w[1] ?? 0) <= 0 || (w[2] ?? 0) <= 0) return false;
+  if ((w[2] ?? 0) > 0.3 + 1e-8) return false;
+  if ((w[5] ?? 0) > cashCap + 1e-6) return false;
+  if (eq < spec.equity - 0.02 || eq > spec.equity + 0.02) return false;
+  if ((w[3] ?? 0) + 1e-8 < spec.bondFloor) return false;
+  if ((w[3] ?? 0) > spec.bondCap + 1e-8) return false;
+  return true;
+}
 
 function normalize(w: number[]): number[] {
   const s = w.reduce((a, b) => a + b, 0);
@@ -530,12 +610,25 @@ export function describeConstraints(
       parts.push(`w${i}=${w[i]!.toFixed(6)}>${cap}`);
     }
   }
+  if (c.floors) {
+    for (let i = 0; i < n; i++) {
+      const floor = c.floors[i] ?? 0;
+      if (w[i]! + 1e-8 < floor) {
+        ok = false;
+        parts.push(`w${i}=${w[i]!.toFixed(6)}<${floor}`);
+      }
+    }
+  }
   for (const g of c.groups) {
     let s = 0;
     for (const i of g.indices) s += w[i] ?? 0;
     if (s > g.cap + 1e-8) {
       ok = false;
       parts.push(`${g.name}=${s.toFixed(6)}>${g.cap}`);
+    }
+    if (g.floor != null && s + 1e-8 < g.floor) {
+      ok = false;
+      parts.push(`${g.name}=${s.toFixed(6)}<${g.floor}`);
     }
   }
   return { ok, msg: ok ? "all constraints hold" : parts.join("; "), sumW };
@@ -579,19 +672,28 @@ let booksCache: ModelPortfolio[] | null = null;
 export function modelBooks(cma: CapitalMarketAssumptions): ModelPortfolio[] {
   const key = JSON.stringify(cma);
   if (booksCache && booksCacheKey === key) return booksCache;
+  const n = cma.mu.length;
+  const fallback = (): ModelPortfolio[] =>
+    FALLBACK_BOOKS.map((b) => ({ ...b, weights: b.weights.slice(), source: "fallback" as const }));
   try {
     const cov = covFromVolCorr(cma.vol, cma.corr);
-    const cons = defaultConstraints(cma.mu.length);
-    const pts = efficientFrontier(cov, cma.mu, 5, cons);
-    if (pts.length !== 5) throw new Error("frontier size");
-    booksCache = pts.map((p, i) => ({
-      ...BOOK_META[i]!,
-      weights: normalize(p.weights),
-    }));
+    const books: ModelPortfolio[] = LADDER.map((spec, i) => {
+      const cons = ladderConstraints(i, n);
+      const start = FALLBACK_BOOKS[i]!.weights.slice(0, n);
+      const sol = minVariance(cov, cons);
+      let w = sol.x.slice();
+      w = normalize(w);
+      const fromOpt = describeConstraints(w, cons).ok && bookMeetsLadder(w, i);
+      if (!fromOpt) {
+        return { ...BOOK_META[i]!, weights: normalize(start), source: "fallback" };
+      }
+      return { ...BOOK_META[i]!, weights: w, source: "optimizer" };
+    });
+    booksCache = books;
     booksCacheKey = key;
     return booksCache;
   } catch {
-    booksCache = FALLBACK_BOOKS.map((b) => ({ ...b, weights: b.weights.slice() }));
+    booksCache = fallback();
     booksCacheKey = key;
     return booksCache;
   }

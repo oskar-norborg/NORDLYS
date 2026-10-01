@@ -378,20 +378,21 @@ function tsvMeta(): ParseMeta {
   };
 }
 
-/** Build 100k compact Nordnet rows and import them. Does not persist. */
-export function timeImport100k(): { ms: number; created: number; rowsRead: number; bytes: number } {
-  const N = 100_000;
+export function timeImportN(N: number): { ms: number; created: number; rowsRead: number; bytes: number } {
   const rows = new Array<NordnetRow>(N);
   for (let i = 0; i < N; i++) rows[i] = compactRow(i + 1);
   const t0 = nowMs();
-  const r = importNordnetRows(rows, tsvMeta(), "perf-100k.txt", emptyLedgerBundle(), {});
+  const r = importNordnetRows(rows, tsvMeta(), `perf-${N}.txt`, emptyLedgerBundle(), {});
   const ms = nowMs() - t0;
   return { ms, created: r.report.transactionsCreated, rowsRead: r.report.rowsRead, bytes: N };
 }
 
-/** Parse a 100,000-row Nordnet TSV (the file path). Does not persist. */
-export function timeParse100kFile(): { ms: number; rowsRead: number; bytes: number } {
-  const N = 100_000;
+/** Build 100k compact Nordnet rows and import them. Does not persist. */
+export function timeImport100k(): { ms: number; created: number; rowsRead: number; bytes: number } {
+  return timeImportN(100_000);
+}
+
+export function timeParseNFile(N: number): { ms: number; rowsRead: number; bytes: number } {
   const header = NORDNET_HEADERS_NB.join("\t");
   const lines = new Array<string>(N + 1);
   lines[0] = header;
@@ -405,6 +406,10 @@ export function timeParse100kFile(): { ms: number; rowsRead: number; bytes: numb
   const parsed = parseNordnetBytes(bytes);
   const ms = nowMs() - t0;
   return { ms, rowsRead: parsed.rows.length, bytes: bytes.byteLength };
+}
+
+export function timeParse100kFile(): { ms: number; rowsRead: number; bytes: number } {
+  return timeParseNFile(100_000);
 }
 
 

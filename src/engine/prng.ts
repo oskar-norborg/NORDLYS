@@ -55,7 +55,7 @@ function mul64(a0: number, a1: number, b0: number, b1: number): [number, number]
 }
 
 export function splitmix64(state0: number, state1: number): { s0: number; s1: number; v0: number; v1: number } {
-  let [s0, s1] = add64(state0, state1, 0x7f4a7c15, 0x9e3779b9);
+  const [s0, s1] = add64(state0, state1, 0x7f4a7c15, 0x9e3779b9);
   let z0 = s0;
   let z1 = s1;
   ;[z0, z1] = xor64(z0, z1, ...shr64(z0, z1, 30));

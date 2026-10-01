@@ -287,9 +287,9 @@ export function runPdfDiagnostics(): DiagTest[] {
       t(
         `4c.roundtrip-${client.id}`,
         "4c. Text extraction",
-        `${client.name}: name and Nordic archive line round-trip`,
-        joined.includes(client.name) && joined.includes(phrase),
-        `${client.name} and ${phrase}`,
+        `${client.name}: client name round-trips; Nordic test phrase is absent`,
+        joined.includes(client.name) && !joined.includes(phrase),
+        `${client.name} present, Ålesund phrase absent`,
         `name=${joined.includes(client.name)} nordic=${joined.includes(phrase)}`,
       ),
     );
@@ -650,6 +650,29 @@ export function runPdfDiagnostics(): DiagTest[] {
       pdfContainsPhrase(nordic, "Ålesund, Tromsø, Bærum") && pdfContainsPhrase(nordic, "€ 1,234.56"),
       "Ålesund, Tromsø, Bærum and € 1,234.56",
       "both present",
+    ),
+  );
+
+  const client = DEMO_CLIENTS[0]!;
+  const whatIf = defaultWhatIf(client.fee);
+  const proposalCheck = buildProposalPdf({
+    profile: client,
+    cma,
+    whatIf,
+    privacy: false,
+    result: runMonteCarlo(buildSimInput(client, cma, whatIf, 32)),
+    baseline: null,
+    nPaths: 32,
+    asOf,
+  });
+  tests.push(
+    t(
+      "4c.proposal-no-glyph-test",
+      "4c. Text extraction",
+      "Client proposal does not contain the Nordic character-test phrase",
+      !pdfContainsPhrase(proposalCheck.bytes, "Ålesund, Tromsø, Bærum"),
+      "phrase only in the sample PDF",
+      pdfContainsPhrase(proposalCheck.bytes, "Ålesund, Tromsø, Bærum") ? "phrase present" : "absent",
     ),
   );
 

@@ -84,7 +84,7 @@ export function ewmaCovariance(R: number[][], lambda = 0.94): number[][] {
   const n = R[0]?.length ?? 0;
   const lam = Math.min(0.999, Math.max(0.5, lambda));
   const one = 1 - lam;
-  let S = T >= 2 ? sampleCovariance(R) : zeros(n);
+  const S = T >= 2 ? sampleCovariance(R) : zeros(n);
   if (T === 0) return S;
   for (let t = 0; t < T; t++) {
     const r = R[t]!;

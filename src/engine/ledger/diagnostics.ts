@@ -610,6 +610,28 @@ export function runLedgerDiagnostics(): DiagTest[] {
     actual: `cash=${usdHold.cash} expected=${expectedCash} fxTx=${usdFxTx.length} amountCcy=[${[...usdAmountCcy].join(",")}] qty=${usdHold.holdings[0]?.qty ?? 0}`,
   });
 
+  const demoHold = computeHoldings(fromUtf16.ledger, "fifo", DEMO_AS_OF);
+  const identityRows = demoHold.holdings.map((h) => {
+    const sum = h.priceEffect + h.currencyEffect + h.feeEffect;
+    return Math.abs(sum - h.unrealizedNok) < 0.05;
+  });
+  const totalsMatch =
+    Math.abs(demoHold.totalPriceEffect + demoHold.totalCurrencyEffect + demoHold.totalFeeEffect - demoHold.totalUnrealized) < 0.08;
+  tests.push({
+    id: "2q.unrealized.fee.identity",
+    group: "2q. Unrealized P&L identity",
+    name: "Price effect + FX effect + fee effect = unrealized P&L on every holding",
+    pass: identityRows.length > 0 && identityRows.every(Boolean) && totalsMatch,
+    expected: "price + FX + fees = uP&L",
+    actual: demoHold.holdings
+      .map((h) => {
+        const sum = h.priceEffect + h.currencyEffect + h.feeEffect;
+        return `${h.security.ticker || h.isin}:${sum.toFixed(2)} vs ${h.unrealizedNok.toFixed(2)}`;
+      })
+      .slice(0, 4)
+      .join(" · "),
+  });
+
   return tests;
 }
 

@@ -128,7 +128,7 @@ export function ResultsPanel() {
           <span>· monthly · 6-asset</span>
           <span>· {whatIf.rebalance === "none" ? "no rebalance" : "rebalanced"}</span>
           <span>· seed {profile.seed}</span>
-          <span>· {book.name}</span>
+          <span>· {book.name}{book.source === "fallback" ? " · fallback allocation" : ""}</span>
           {nPaths < 10000 ? <span className="text-warn">preview</span> : null}
           {running ? (
             <span className="text-accent">Updating {(progress * 100).toFixed(0)}%</span>
@@ -175,7 +175,10 @@ export function ResultsPanel() {
                 })}
               </div>
             )}
-            <FanChart result={result} privacy={privacy} currency={profile.currency} />
+            <FanChart result={result} privacy={privacy} currency={profile.currency} inflation={cma.inflation} />
+            <p className="mt-2 text-xs text-muted">
+              Fan amounts are in today’s {profile.currency} (real). Nominal path values sit in the proposal appendix.
+            </p>
             <p className="mt-3 text-xs leading-relaxed text-subtle">{riskRationale(scored.tolerance, scored.capacity, scored.profile)}</p>
           </>
         )}

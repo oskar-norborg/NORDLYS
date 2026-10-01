@@ -49,7 +49,7 @@ export function looksGeneratedTicker(ticker: string, name: string, isin: string)
   if (!t) return true;
   if (isin && (t === isin.slice(-4) || t === isin.slice(-3) || t === isin.slice(-5))) return true;
   if (/^\d{3,6}$/.test(t)) return true;
-  const m = /^([A-Z0-9.\-]{1,12})\b/i.exec(name.trim());
+  const m = /^([A-Z0-9.-]{1,12})\b/i.exec(name.trim());
   if (m && t.toUpperCase() === m[1]!.toUpperCase()) return true;
   return false;
 }

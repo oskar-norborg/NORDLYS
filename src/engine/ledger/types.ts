@@ -257,6 +257,7 @@ export interface Holding {
   unrealizedNok: number;
   priceEffect: number;
   currencyEffect: number;
+  feeEffect: number;
   weight: number;
   asOf: string;
 }
@@ -282,6 +283,7 @@ export interface HoldingsResult {
   totalUnrealized: number;
   totalPriceEffect: number;
   totalCurrencyEffect: number;
+  totalFeeEffect: number;
   totalRealized: number;
   allocation: { assetClass: AssetId; value: number; weight: number }[];
 }

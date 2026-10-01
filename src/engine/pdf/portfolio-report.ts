@@ -81,6 +81,12 @@ export function buildPortfolioReportPdf(input: PortfolioReportInput): BuiltPdf {
     { label: "XIRR", value: Number.isFinite(returns.xirr) ? formatPct(returns.xirr, 1, true) : "—" },
     { label: "Unreal. P&L", value: privacy ? formatPct(holdings.totalMarket ? holdings.totalUnrealized / holdings.totalMarket : 0, 1, true) : formatMoney(holdings.totalUnrealized, "NOK", false) },
   ]);
+  if (holdings.holdings.some((h) => h.priceStale || h.fxStale)) {
+    doc.paragraph("TWR and XIRR are based on trade prices only; import price history for accurate returns.", {
+      size: 8,
+      color: C.muted,
+    });
+  }
 
   if (returns.nav.length >= 2) {
     const base = returns.nav[0]!.value || 1;
@@ -166,9 +172,10 @@ export function buildPortfolioReportPdf(input: PortfolioReportInput): BuiltPdf {
       [
         { header: "Name", width: 150 },
         { header: "Weight", width: 55, align: "right" },
-        { header: "uP&L", width: 75, align: "right" },
-        { header: "Price", width: 70, align: "right" },
-        { header: privacy ? "FX" : "Ccy", width: 70, align: "right" },
+        { header: "uP&L", width: 60, align: "right" },
+        { header: "Price effect", width: 70, align: "right" },
+        { header: "FX effect", width: 65, align: "right" },
+        { header: "Fees", width: 55, align: "right" },
       ],
       top.map((h) => [
         h.security.name,
@@ -178,6 +185,7 @@ export function buildPortfolioReportPdf(input: PortfolioReportInput): BuiltPdf {
           : formatMoney(h.unrealizedNok, "NOK", false),
         privacy ? "-" : formatMoney(h.priceEffect, "NOK", false),
         privacy ? "-" : formatMoney(h.currencyEffect, "NOK", false),
+        privacy ? "-" : formatMoney(h.feeEffect, "NOK", false),
       ]),
     );
   }

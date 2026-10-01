@@ -520,11 +520,14 @@ export function RiskPage() {
         </Panel>
       </div>
 
-      <Panel kicker="Planner" title="CMA model books (from this optimizer)">
+      <Panel kicker="Planner" title="CMA model books">
         <div className="grid gap-3 sm:grid-cols-5">
           {books.map((b) => (
             <div key={b.id} className="rounded-md border border-border p-3">
               <div className="text-xs text-muted">{b.name}</div>
+              <div className="mb-1 text-[10px] uppercase tracking-wide text-subtle">
+                {b.source === "fallback" ? "fallback allocation" : "from the optimizer"}
+              </div>
               {b.weights.map((w, i) => (
                 <div key={ASSET_IDS[i]} className="flex justify-between font-mono text-[11px] text-muted">
                   <span>{ASSET_SHORT[ASSET_IDS[i]!]}</span>

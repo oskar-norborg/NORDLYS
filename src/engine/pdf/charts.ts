@@ -3,6 +3,7 @@
 import type { RGB } from "./layout";
 import { C, CHART_PALETTE } from "./layout";
 import { pdfString, textWidth } from "./winansi";
+import { niceTicksFromZero } from "../finance";
 
 function nn(x: number, fallback = 0): number {
   return Number.isFinite(x) ? x : fallback;
@@ -116,22 +117,16 @@ export function fanOps(
   const w = box.w - padL - padR;
   const h = box.h - padB - padT;
   const n = Math.min(years.length, bands.p50.length);
-  let lo = Infinity;
-  let hi = -Infinity;
+  let hi = 0;
   for (let i = 0; i < Math.max(n, 1); i++) {
-    lo = Math.min(lo, nn(bands.p5[i], 0), nn(bands.p50[i], 0), nn(bands.p95[i], 0));
     hi = Math.max(hi, nn(bands.p5[i], 0), nn(bands.p50[i], 0), nn(bands.p95[i], 0));
   }
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || !(hi > lo)) {
-    if (!Number.isFinite(lo)) lo = 0;
-    if (!Number.isFinite(hi) || hi <= lo) hi = lo + 1;
-  }
-  const pad = Math.max((hi - lo) * 0.06, 1e-6);
-  lo -= pad;
-  hi += pad;
+  if (!Number.isFinite(hi) || hi <= 0) hi = 1;
+  const yTicks = niceTicksFromZero(hi);
+  const top = yTicks[yTicks.length - 1] ?? hi;
   const count = Math.max(n, 2);
   const X = (i: number) => x0 + (i / (count - 1)) * w;
-  const Y = (v: number) => y0 + ((nn(v, lo) - lo) / (hi - lo)) * h;
+  const Y = (v: number) => y0 + (nn(v, 0) / top) * h;
   const out: string[] = [];
   out.push(`0.4 w ${rgb(C.rule, "RG")}`);
   out.push(`${nn(x0).toFixed(2)} ${nn(y0).toFixed(2)} m ${nn(x0 + w).toFixed(2)} ${nn(y0).toFixed(2)} l S`);
@@ -165,9 +160,7 @@ export function fanOps(
   for (let i = 1; i < n; i++) out.push(`${X(i).toFixed(2)} ${Y(bands.p50[i]!).toFixed(2)} l`);
   out.push("S");
 
-  const ticks = 4;
-  for (let t = 0; t <= ticks; t++) {
-    const v = lo + ((hi - lo) * t) / ticks;
+  for (const v of yTicks) {
     const yy = Y(v);
     const lab = formatTick(v);
     const tw = textWidth(lab, "r", 7);
@@ -192,8 +185,14 @@ export function fanOps(
 function formatTick(v: number): string {
   const x = nn(v, 0);
   const a = Math.abs(x);
-  if (a >= 1e9) return `${(x / 1e9).toFixed(1)}bn`;
-  if (a >= 1e6) return `${(x / 1e6).toFixed(1)}m`;
+  if (a >= 1e9) {
+    const n = x / 1e9;
+    return Number.isInteger(n) ? `${n}bn` : `${n.toFixed(1)}bn`;
+  }
+  if (a >= 1e6) {
+    const n = x / 1e6;
+    return Number.isInteger(n) ? `${n}m` : `${n.toFixed(0)}m`;
+  }
   if (a >= 1e3) return `${(x / 1e3).toFixed(0)}k`;
   if (a >= 10) return x.toFixed(0);
   return x.toFixed(1);

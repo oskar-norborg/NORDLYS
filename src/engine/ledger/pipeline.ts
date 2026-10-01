@@ -291,7 +291,7 @@ export function applyReviewMapping(
   const nextMap: Record<string, TxKind> = { ...mappings, [rawType]: kind, [rawType.trim()]: kind };
   const pending = rows.filter((r) => r.rawType === rawType && !r.cancelDate);
   const known = new Set(ledger.transactions.map((t) => t.fingerprint));
-  let next = cloneLedger(ledger);
+  const next = cloneLedger(ledger);
   const extra: Transaction[] = [];
   for (const row of pending) {
     const tx = toTx(row, kind, fileName, false);

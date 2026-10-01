@@ -209,6 +209,7 @@ export function computeHoldings(
     const costNok = agg.qty * agg.unitPrice * agg.fx + agg.feesNok;
     const priceEffect = agg.qty * (price - agg.unitPrice) * fx;
     const currencyEffect = agg.qty * agg.unitPrice * (fx - agg.fx);
+    const feeEffect = -agg.feesNok;
     holdings.push({
       isin,
       security: sec,
@@ -227,6 +228,7 @@ export function computeHoldings(
       unrealizedNok: marketNok - costNok,
       priceEffect,
       currencyEffect,
+      feeEffect,
       weight: 0,
       asOf,
     });
@@ -261,6 +263,7 @@ export function computeHoldings(
     totalUnrealized: holdings.reduce((s, h) => s + h.unrealizedNok, 0),
     totalPriceEffect: holdings.reduce((s, h) => s + h.priceEffect, 0),
     totalCurrencyEffect: holdings.reduce((s, h) => s + h.currencyEffect, 0),
+    totalFeeEffect: holdings.reduce((s, h) => s + h.feeEffect, 0),
     totalRealized: realizedMerged.reduce((s, r) => s + r.realizedNok, 0),
     allocation,
   };

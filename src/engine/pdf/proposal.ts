@@ -3,6 +3,7 @@
 import type { CapitalMarketAssumptions, ClientProfile, SimResult, WhatIf } from "../types";
 import { ASSET_LABELS, ASSET_IDS, GOAL_TYPE_LABELS, RISK_LABELS, AS_OF_YEAR, N_PATHS } from "../types";
 import { formatBp, formatIndex, formatMoney, formatPct } from "../format";
+import { deflateByInflation } from "../finance";
 import { profileFromAnswers, riskRationale } from "../risk";
 import { buildSimInput, effectivePortfolio, effectiveRiskLevel } from "../schedule";
 import { runMonteCarlo } from "../montecarlo";
@@ -187,29 +188,35 @@ export function buildProposalPdf(input: ProposalInput): BuiltPdf {
 
   doc.heading("Projected outcomes", 180);
   doc.paragraph(
-    `Percentile fan of portfolio wealth, ${result.nPaths.toLocaleString()} monthly paths, seed ${profile.seed}. ` +
+    `Percentile fan of portfolio wealth in today’s money (real), ${result.nPaths.toLocaleString()} monthly paths, seed ${profile.seed}. ` +
       (privacy
         ? "Privacy mode: series are indexed to 100 at the start."
-        : `Nominal ${profile.currency}, inflation ${formatPct(cma.inflation, 1)} in the cash-flow schedule.`),
+        : `Inflation ${formatPct(cma.inflation, 1)} is stripped from the paths so the chart is comparable to today’s goals.`),
     { size: 9, leading: 12 },
   );
+  const realP5 = deflateByInflation(result.p5, result.years, cma.inflation);
+  const realP25 = deflateByInflation(result.p25, result.years, cma.inflation);
+  const realP50 = deflateByInflation(result.p50, result.years, cma.inflation);
+  const realP75 = deflateByInflation(result.p75, result.years, cma.inflation);
+  const realP95 = deflateByInflation(result.p95, result.years, cma.inflation);
   const scale = privacy ? 100 / Math.max(start, 1) : 1;
   const fanBox = doc.chartBox(168);
+  const calYears = result.years.map((y) => AS_OF_YEAR + y);
   doc.raw(
     fanOps(
       fanBox,
-      result.years,
+      calYears,
       {
-        p5: result.p5.map((v) => v * scale),
-        p25: result.p25.map((v) => v * scale),
-        p50: result.p50.map((v) => v * scale),
-        p75: result.p75.map((v) => v * scale),
-        p95: result.p95.map((v) => v * scale),
+        p5: realP5.map((v) => v * scale),
+        p25: realP25.map((v) => v * scale),
+        p50: realP50.map((v) => v * scale),
+        p75: realP75.map((v) => v * scale),
+        p95: realP95.map((v) => v * scale),
       },
-      privacy ? "Index (start = 100)" : profile.currency,
+      privacy ? "Index (start = 100)" : `Today’s ${profile.currency}`,
     ),
   );
-  doc.paragraph("Shaded bands are the 5th–95th and 25th–75th percentiles; the line is the median.", {
+  doc.paragraph("Shaded bands are the 5th–95th and 25th–75th percentiles; the line is the median. Amounts are real.", {
     size: 8,
     color: C.muted,
   });
@@ -378,9 +385,58 @@ export function buildProposalPdf(input: ProposalInput): BuiltPdf {
     { fontSize: 7 },
   );
 
+  if (book.source === "fallback") {
+    doc.paragraph("Allocation source: fallback allocation. The optimizer did not meet the advisory ladder bands for this book, so the published fallback weights are used.", {
+      size: 8,
+      leading: 11,
+      color: C.muted,
+    });
+  } else {
+    doc.paragraph("Allocation source: mean-variance optimizer inside the advisory ladder bands.", {
+      size: 8,
+      leading: 11,
+      color: C.muted,
+    });
+  }
+
+  doc.heading("Appendix — nominal fan", 80);
+  doc.paragraph(
+    "The same percentile paths before deflating by inflation. Use this table if you need year-of-spend kroner; the chart above is in today’s money.",
+    { size: 8, leading: 11, color: C.muted },
+  );
+  const step = result.years.length > 20 ? 10 : result.years.length > 10 ? 5 : 2;
+  const rows: string[][] = [];
+  for (let i = 0; i < result.years.length; i += step) {
+    rows.push([
+      String(AS_OF_YEAR + result.years[i]!),
+      privacy ? "—" : formatMoney(result.p5[i] ?? 0, profile.currency, false),
+      privacy ? "—" : formatMoney(result.p50[i] ?? 0, profile.currency, false),
+      privacy ? "—" : formatMoney(result.p95[i] ?? 0, profile.currency, false),
+    ]);
+  }
+  const last = result.years.length - 1;
+  if (last >= 0 && last % step !== 0) {
+    rows.push([
+      String(AS_OF_YEAR + result.years[last]!),
+      privacy ? "—" : formatMoney(result.p5[last] ?? 0, profile.currency, false),
+      privacy ? "—" : formatMoney(result.p50[last] ?? 0, profile.currency, false),
+      privacy ? "—" : formatMoney(result.p95[last] ?? 0, profile.currency, false),
+    ]);
+  }
+  doc.addTable(
+    [
+      { header: "Year", width: 70 },
+      { header: "p5 nominal", width: 110, align: "right" },
+      { header: "Median nominal", width: 120, align: "right" },
+      { header: "p95 nominal", width: 110, align: "right" },
+    ],
+    rows,
+    { fontSize: 8 },
+  );
+
   doc.heading("Disclaimer");
   doc.paragraph(
-    "This proposal is prepared by NORDLYS for the named household. Monte Carlo projections use the stated capital-market assumptions, the household’s cash-flows, and a seeded generator so every figure can be reproduced. They are hypothetical illustrations, not forecasts or guarantees of future results. Markets can lose money. Fees reduce wealth. Past performance is not indicative of future results. NORDLYS does not provide legal, tax, or regulated investment advice in this document. Ålesund, Tromsø, Bærum — Nordic characters are encoded for the archive.",
+    "This proposal is prepared by NORDLYS for the named household. Monte Carlo projections use the stated capital-market assumptions, the household’s cash-flows, and a seeded generator so every figure can be reproduced. They are hypothetical illustrations, not forecasts or guarantees of future results. Markets can lose money. Fees reduce wealth. Past performance is not indicative of future results. NORDLYS does not provide legal, tax, or regulated investment advice in this document.",
     { size: 8, leading: 11, color: C.muted },
   );
 

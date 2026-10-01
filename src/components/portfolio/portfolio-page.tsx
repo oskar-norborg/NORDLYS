@@ -152,17 +152,30 @@ export function PortfolioPage() {
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Metric label="Time-weighted" value={formatPct(returns.twr, 1, true)} hint={`annualized ${formatPct(twrAnn, 1, true)}`} />
+        <Metric
+          label="Time-weighted"
+          value={formatPct(returns.twr, 1, true)}
+          hint={
+            priceStale || fxStale
+              ? "based on trade prices only; import price history for accurate returns"
+              : `annualized ${formatPct(twrAnn, 1, true)}`
+          }
+        />
         <Metric
           label="Money-weighted (XIRR)"
           value={Number.isFinite(returns.xirr) ? formatPct(returns.xirr, 1, true) : "—"}
+          hint={
+            priceStale || fxStale
+              ? "based on trade prices only; import price history for accurate returns"
+              : undefined
+          }
         />
         <Metric
-          label="Price / currency effect"
+          label="Price / FX / fees"
           value={
             privacy
               ? `${formatPct(holdings.totalPriceEffect / Math.max(holdings.totalCost, 1), 1, true)} / ${formatPct(holdings.totalCurrencyEffect / Math.max(holdings.totalCost, 1), 1, true)}`
-              : `${formatMoney(holdings.totalPriceEffect, "NOK", false)} / ${formatMoney(holdings.totalCurrencyEffect, "NOK", false)}`
+              : `${formatMoney(holdings.totalPriceEffect, "NOK", false)} / ${formatMoney(holdings.totalCurrencyEffect, "NOK", false)} / ${formatMoney(holdings.totalFeeEffect, "NOK", false)}`
           }
         />
       </div>
@@ -181,8 +194,9 @@ export function PortfolioPage() {
                     <th className="px-2 py-2 font-medium">MV NOK</th>
                     <th className="px-2 py-2 font-medium">Wgt</th>
                     <th className="px-2 py-2 font-medium">uP&L</th>
-                    <th className="px-2 py-2 font-medium">Price</th>
-                    <th className="px-2 py-2 font-medium">Ccy</th>
+                    <th className="px-2 py-2 font-medium">Price effect</th>
+                    <th className="px-2 py-2 font-medium">FX effect</th>
+                    <th className="px-2 py-2 font-medium">Fees</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,6 +231,9 @@ export function PortfolioPage() {
                       </td>
                       <td className="px-2 py-2 font-mono text-xs tabular-nums">
                         {privacy ? "—" : formatMoney(h.currencyEffect, "NOK", false)}
+                      </td>
+                      <td className="px-2 py-2 font-mono text-xs tabular-nums">
+                        {privacy ? "—" : formatMoney(h.feeEffect, "NOK", false)}
                       </td>
                     </tr>
                   ))}
