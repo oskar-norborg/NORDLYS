@@ -1,14 +1,16 @@
 # NORDLYS
 
+Oskar Norborg
+
 Private wealth planning that runs in the browser.
 
-I wanted something I could sit down with and actually use on a household: goals, a portfolio built from transactions, risk on that same book, and a backtest I could read. Not a dashboard that pretends one forecast is the future.
+I wanted a planner I could sit down with and actually use on a household: goals, a book built from transactions, risk on that same book, and a backtest I could read. Not a dashboard that pretends one forecast is the future.
 
-I built it in Grok Build Mode. I directed the product — what it should do, what it must not do, and when a screen was good enough to show someone. Grok wrote most of the implementation. That collaboration is visible in this repo. I am fine with that.
+I directed it. What it should do, what it must not do, and when a screen was good enough to show someone. I built it with Grok, in Grok Build Mode. Grok wrote most of the code. That is in the commit history. I am not going to pretend I typed every line.
 
 Nothing leaves the device. There are no accounts. Demo, My Data, and Privacy are just modes.
 
-The repo still contains App Builder hosting files under `src/lib/auth`, `src/lib/db.ts`, and `src/lib/multiplayer`. The product never calls them. They stay because the App Builder host expects that scaffolding. The planner, ledger, Monte Carlo, and PDFs run entirely in the browser.
+The repo still has App Builder hosting files under `src/lib/auth`, `src/lib/db.ts`, and `src/lib/multiplayer`. The product never calls them. They stay because the host expects that scaffolding. The planner, ledger, Monte Carlo, and PDFs run in the browser.
 
 ## What it does
 
@@ -93,7 +95,7 @@ flowchart TB
   user --> pdfbtn
 ```
 
-The Monte Carlo can run on the main thread or in a worker. Sweeps use a worker so the page stays usable. The PDF is built from the plan that already ran — it should not simulate again just to write a file.
+The Monte Carlo can run on the main thread or in a worker. Sweeps use a worker so the page stays usable. The PDF is built from the plan that already ran. It should not simulate again just to write a file.
 
 ## Choices I would stand behind
 
@@ -101,7 +103,7 @@ The Monte Carlo can run on the main thread or in a worker. Sweeps use a worker s
 
 **Do not look ahead.** Negative offsets like `close[-1]` are a parse error. Looking back in time is the only direction that is allowed.
 
-**Show the out-of-sample number.** A sweep that only prints the best in-sample Sharpe is a ranking of luck. In-sample is the first ~70% of the calendar; out-of-sample is the rest.
+**Show the out-of-sample number.** A sweep that only prints the best in-sample Sharpe is a ranking of luck. In-sample is the first ~70% of the calendar. Out-of-sample is the rest.
 
 **Time the real work.** The PDF should reuse the 10k result it is documenting. Re-running the simulation inside the PDF clock would make the number look better than the product.
 
@@ -125,4 +127,4 @@ Open **Show this** from the planner or the sidebar if you want the six-stop walk
 
 ## What I would change
 
-Diagnostics should not freeze the UI the first time someone opens that page in a demo. Imported price history should win over demo series once a file is there. I would not put personal data on a server until there was real auth — which this app deliberately does not have.
+Diagnostics should not freeze the UI the first time someone opens that page in a demo. Imported price history should win over demo series once a file is there. I would not put personal data on a server until there was real auth, which this app deliberately does not have.

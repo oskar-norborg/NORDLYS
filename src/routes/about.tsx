@@ -8,7 +8,7 @@ function AboutPage() {
       <div className="kicker mb-2">Method</div>
       <h1 className="text-2xl font-medium tracking-tight">About NORDLYS</h1>
       <p className="mt-4 text-sm leading-relaxed text-fg">
-        NORDLYS — designed and directed by Grok Build, built with Grok Build Mode.
+        I designed and directed NORDLYS. Oskar Norborg. Grok wrote most of the code in Grok Build Mode, under that direction.
       </p>
       <div className="mt-6 flex flex-col gap-5 text-sm leading-relaxed text-muted">
         <p>
