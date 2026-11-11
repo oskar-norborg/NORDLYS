@@ -1,10 +1,8 @@
 # NORDLYS
 
-Oskar Norborg
-
 Private wealth planning that runs in the browser.
 
-I wanted a planner I could sit down with and actually use on a household: goals, a book built from transactions, risk on that same book, and a backtest I could read. Not a dashboard that pretends one forecast is the future.
+I am Oskar Norborg. I wanted a planner I could sit down with and actually use on a household: goals, a book built from transactions, risk on that same book, and a backtest I could read. Not a dashboard that pretends one forecast is the future.
 
 I directed it. What it should do, what it must not do, and when a screen was good enough to show someone. I built it with Grok, in Grok Build Mode. Grok wrote most of the code. That is in the commit history. I am not going to pretend I typed every line.
 
